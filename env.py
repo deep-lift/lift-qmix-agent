@@ -54,7 +54,7 @@ def get_common_args():
     parser.add_argument('--action_space', type=int, default=3, help='action space')
     parser.add_argument('--num_actions', type=int, default=3, help='number of agents')
     parser.add_argument('--num_agents', type=int, default=4, help='number of agents')
-    parser.add_argument('--max_episode_steps', type=int, default=200, help='number of agents')
+    parser.add_argument('--max_episode_steps', type=int, default=5000, help='number of agents')
 
     parser.add_argument('--difficulty', type=str, default='7', help='the difficulty of the game')
     parser.add_argument('--game_version', type=str, default='latest', help='the version of the game')

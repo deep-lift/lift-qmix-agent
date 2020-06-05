@@ -10,6 +10,7 @@ import elevator
 from argslist import *
 import numpy as np
 import random
+import os
 
 args = get_common_args()
 args = qmix_args(args)
@@ -27,6 +28,7 @@ episode_rewards = []
 train_steps = 0
 
 save_path = args.result_dir + '/' + args.alg
+os.makedirs(save_path, exist_ok=True)
 
 
 def evaluate():
@@ -40,8 +42,8 @@ def evaluate():
     return win_number / args.n_evaluate_episode, episode_rewards / args.n_evaluate_episode
 
 
-for epoch in range(args.n_epoch):
-    print('Run {}, train epoch {}'.format(1, epoch))
+for i, epoch in enumerate(args.n_epoch):
+    print('Run {}, train epoch {}'.format(i, epoch))
 
     if epoch % args.evaluate_cycle == 0:
         win_rate, episode_reward = evaluate()
