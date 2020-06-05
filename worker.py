@@ -14,7 +14,6 @@ class RolloutWorker:
         self.state_space = args.state_space
         self.obs_space = args.obs_space
         self.args = args
-
         self.epsilon = args.epsilon
         self.anneal_epsilon = args.anneal_epsilon
         self.min_epsilon = args.min_epsilon
@@ -23,15 +22,15 @@ class RolloutWorker:
 
     def generate_episode(self, episode_num=None, evaluate=False):
         o, u, r, s, avail_u, u_onehot, terminate, padded = [], [], [], [], [], [], [], []
-        self.env.reset()
-        terminated = False
 
+        self.env.reset()
+        self.env.render()
+
+        terminated = False
         step = 0
         episode_reward = 0
-
         last_action = np.zeros((self.args.num_agents, self.args.num_actions))
         self.agents.policy.init_hidden(1)
-
         epsilon = 0 if evaluate else self.epsilon
         if self.args.epsilon_anneal_scale == 'episode':
             epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
@@ -40,21 +39,22 @@ class RolloutWorker:
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
 
         while not terminated:
-            # time.sleep(0.2)
-            obs = self.env.get_obs()
-            state = self.env.get_state()
 
             """
             State and Observations
             At each timestep, agents receive local observations drawn within their field of view. This encompasses information about the map within a circular area around each unit and with a radius equal to the sight range. The sight range makes the environment partially observable from the standpoint of each agent. Agents can only observe other agents if they are both alive and located within the sight range. Hence, there is no way for agents to determine whether their teammates are far away or dead.
-            
+
             The feature vector observed by each agent contains the following attributes for both allied and enemy units within the sight range: distance, relative x, relative y, health, shield, and unit_type 1. Shields serve as an additional source of protection that needs to be removed before any damage can be done to the health of units. All Protos units have shields, which can regenerate if no new damage is dealt (units of the other two races do not have this attribute). In addition, agents have access to the last actions of allied units that are in the field of view. Lastly, agents can observe the terrain features surrounding them; particularly, the values of eight points at a fixed radius indicating height and walkability.
-            
+
             The global state, which is only available to agents during centralised training, contains information about all units on the map. Specifically, the state vector includes the coordinates of all agents relative to the centre of the map, together with unit features present in the observations. Additionally, the state stores the energy of Medivacs and cooldown of the rest of allied units, which represents the minimum delay between attacks. Finally, the last actions of all agents are attached to the central state.
-            
+
             All features, both in the state as well as in the observations of individual agents, are normalised by their maximum values. The sight range is set to 9 for all agents.
             """
+            # time.sleep(0.2)
+            obs = self.env.get_obs()
+            state = self.env.get_state()
             actions, avail_actions, actions_onehot = [], [], []
+
             for agent_id in range(self.num_agents):
                 # avail_action = self.env.get_avail_agent_actions(agent_id)
                 avail_action = None
@@ -67,13 +67,14 @@ class RolloutWorker:
                 last_action[agent_id] = action_onehot
 
             reward, terminated, _ = self.env.step_split(actions)
-
             terminated = all(terminated)
-            # todo : 우선 리워드의 합으로 global reward 접근
+
+            # todo : 개별 리워드의 합으로 global reward 계산
             reward = np.sum(reward)
 
+            # 종료조건 추가
             if step == self.args.max_episode_steps - 1:
-                terminated = 1
+                terminated = True
 
             o.append(obs)
             s.append(state)
@@ -85,10 +86,13 @@ class RolloutWorker:
             padded.append([0.])
             episode_reward += reward
             step += 1
+
             # if terminated:
             #     time.sleep(1)
+
             if self.args.epsilon_anneal_scale == 'step':
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
+
         o.append(obs)
         s.append(state)
         o_next = o[1:]
