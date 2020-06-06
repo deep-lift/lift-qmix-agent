@@ -42,8 +42,8 @@ def evaluate():
     return win_number / args.n_evaluate_episode, episode_rewards / args.n_evaluate_episode
 
 
-for i, epoch in enumerate(args.n_epoch):
-    print('Run {}, train epoch {}'.format(i, epoch))
+for epoch in range(args.n_epoch):
+    print('Run {}, train epoch {}'.format(1, epoch))
 
     if epoch % args.evaluate_cycle == 0:
         win_rate, episode_reward = evaluate()

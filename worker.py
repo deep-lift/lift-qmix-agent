@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch.distributions import one_hot_categorical
 import time
-
+from argslist import *
 
 class RolloutWorker:
     def __init__(self, env, agents, args):
@@ -38,6 +38,8 @@ class RolloutWorker:
             if episode_num == 0:
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
 
+        requested_agents = [True] * N_AGENTS
+
         while not terminated:
 
             """
@@ -56,17 +58,24 @@ class RolloutWorker:
             actions, avail_actions, actions_onehot = [], [], []
 
             for agent_id in range(self.num_agents):
-                # avail_action = self.env.get_avail_agent_actions(agent_id)
-                avail_action = None
-                action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate)
-                action_onehot = np.zeros(self.args.num_actions)
-                action_onehot[action] = 1
-                actions.append(action)
-                actions_onehot.append(action_onehot)
-                # avail_actions.append(avail_action)
-                last_action[agent_id] = action_onehot
 
-            reward, terminated, _ = self.env.step_split(actions)
+                if requested_agents[agent_id]:
+                    action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, epsilon, evaluate)
+                    action_onehot = np.zeros(self.args.num_actions)
+                    action_onehot[action] = 1
+                    actions.append(action)
+                    actions_onehot.append(action_onehot)
+                    last_action[agent_id] = action_onehot
+                else:
+                    action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, epsilon, evaluate)
+                    action_onehot = np.zeros(self.args.num_actions)
+                    action_onehot[action] = 0
+                    actions.append(action)
+                    actions_onehot.append(action_onehot)
+                    last_action[agent_id] = action_onehot
+
+            reward, terminated, requested_agents = self.env.step_split(actions)
+
             terminated = all(terminated)
 
             # todo : 개별 리워드의 합으로 global reward 계산
@@ -92,6 +101,10 @@ class RolloutWorker:
 
             if self.args.epsilon_anneal_scale == 'step':
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
+
+            while not any(requested_agents):
+                reward, terminated, requested_agents = self.env.step_split([])
+                terminated = all(terminated)
 
         o.append(obs)
         s.append(state)

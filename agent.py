@@ -13,9 +13,9 @@ class Agents:
         self.policy = QMIX(args)
         self.args = args
 
-    def choose_action(self, obs, last_action, agent_num, avail_actions, epsilon, evaluate=False):
+    def choose_action(self, obs, last_action, agent_num, epsilon, evaluate=False):
         inputs = obs.copy()
-        avail_actions_ind = np.nonzero(avail_actions)[0]
+        #avail_actions_ind = np.nonzero(avail_actions)[0]
 
         agent_id = np.zeros(self.num_agents)
         agent_id[agent_num] = 1.
@@ -37,7 +37,7 @@ class Agents:
         q_value, self.policy.eval_hidden[:, agent_num, :] = self.policy.eval_rnn(inputs, hidden_state)
 
         # q_value[avail_actions == 0.0] = -float("inf")
-        if np.random.uniform() < epsilon:
+        if np.random.uniform() < epsilon and not evaluate:
             # action = np.random.choice(avail_actions_ind)
             action = np.random.choice(self.args.num_actions)
         else:

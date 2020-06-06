@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 from replay_buffer import ReplayBuffer
 
 
-
-
 args = get_common_args()
 args = qmix_args(args)
 
