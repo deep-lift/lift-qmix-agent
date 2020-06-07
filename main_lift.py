@@ -69,7 +69,6 @@ for epoch in range(args.n_epoch):
     plt.rcParams["figure.figsize"] = (50, 50)
     plt.rcParams['lines.linewidth'] = 4
 
-
     index1 = ["Action 0", "Action 1", "Action 2"]
     axes[0, 0].bar(x=index1, height=plot_count_per_actions)
     axes[0, 0].set_title('Cumulative count over action space')
@@ -85,11 +84,13 @@ for epoch in range(args.n_epoch):
     axes[1, 1].plot(range(len(plot_episode_rewards)), plot_episode_rewards)
     axes[1, 1].set_title('episode rewards')
 
-    figure.tight_layout()
+    # figure.tight_layout()
 
     plt.savefig(save_path + '/plt_{}.png'.format(1), format='png')
     # np.save(save_path + '/win_rates_{}'.format(1), win_rates)
     # np.save(save_path + '/episode_rewards_{}'.format(1), episode_rewards)
+
+    plt.close()
 
 plt.cla()
 plt.subplot(2, 1, 1)
