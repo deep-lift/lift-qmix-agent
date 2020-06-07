@@ -1,6 +1,7 @@
 from gym.core import Env
 import argparse
 import numpy as np
+from argslist import *
 
 
 def qmix_args(args):
@@ -17,16 +18,19 @@ def qmix_args(args):
     args.epsilon_anneal_scale = 'step'
 
     # the number of the epoch to train the agent
-    args.n_epoch = 20000
+    args.n_epoch = 2000000
 
     # the number of the episodes in one epoch
-    args.n_episodes = 10
+    args.n_episodes = 3
 
     # the number of the train steps in one epoch
     args.train_steps = 1
 
+    # how often to save the model
+    args.save_cycle = 5000
+
     # # how often to evaluate
-    args.evaluate_cycle = 100
+    args.evaluate_cycle = 10
 
     # experience replay
     args.batch_size = 32
@@ -54,7 +58,7 @@ def get_common_args():
     parser.add_argument('--action_space', type=int, default=3, help='action space')
     parser.add_argument('--num_actions', type=int, default=3, help='number of agents')
     parser.add_argument('--num_agents', type=int, default=4, help='number of agents')
-    parser.add_argument('--max_episode_steps', type=int, default=5000, help='number of agents')
+    parser.add_argument('--max_episode_steps', type=int, default=N_MAX_STEPS, help='number of agents')
 
     parser.add_argument('--difficulty', type=str, default='7', help='the difficulty of the game')
     parser.add_argument('--game_version', type=str, default='latest', help='the version of the game')
@@ -68,7 +72,7 @@ def get_common_args():
     parser.add_argument('--reuse_network', type=bool, default=True, help='whether to use one network for all agents')
     parser.add_argument('--gamma', type=float, default=0.99, help='discount factor')
     parser.add_argument('--optimizer', type=str, default="RMS", help='optimizer')
-    parser.add_argument('--n_evaluate_episode', type=int, default=3, help='number of the episode to evaluate the agent')
+    parser.add_argument('--n_evaluate_episode', type=int, default=5, help='number of the episode to evaluate the agent')
     parser.add_argument('--model_dir', type=str, default='./model', help='model directory of the policy')
     parser.add_argument('--result_dir', type=str, default='./result', help='result directory of the policy')
     parser.add_argument('--load_model', type=bool, default=False, help='whether to load the pretrained model')

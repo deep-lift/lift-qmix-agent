@@ -38,9 +38,14 @@ class RolloutWorker:
             if episode_num == 0:
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
 
-        requested_agents = [True] * N_AGENTS
+        requested_agents = np.asarray([True] * N_AGENTS)
+        plot_count_per_actions = np.asarray([0] * N_ACTION)
+        plot_episode_requested_agents = np.asarray([0] * N_AGENTS)
 
         while not terminated:
+
+            # 에이전트 액션별 카운트 (네트워크에서 출력한 에이전트의 액션 빈도)
+            plot_episode_requested_agents[requested_agents] += 1
 
             """
             State and Observations
@@ -58,7 +63,6 @@ class RolloutWorker:
             actions, avail_actions, actions_onehot = [], [], []
 
             for agent_id in range(self.num_agents):
-
                 if requested_agents[agent_id]:
                     action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, epsilon, evaluate)
                     action_onehot = np.zeros(self.args.num_actions)
@@ -66,6 +70,10 @@ class RolloutWorker:
                     actions.append(action)
                     actions_onehot.append(action_onehot)
                     last_action[agent_id] = action_onehot
+                    
+                    # 여기에 액션의 출력과 요청 에이전트 수를 기록하기 위함
+                    plot_episode_requested_agents[agent_id] +=1
+                    plot_count_per_actions[action] +=1
                 else:
                     action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, epsilon, evaluate)
                     action_onehot = np.zeros(self.args.num_actions)
@@ -89,15 +97,11 @@ class RolloutWorker:
             s.append(state)
             u.append(np.reshape(actions, [self.num_agents, 1]))
             u_onehot.append(actions_onehot)
-            # avail_u.append(avail_actions)
             r.append([reward])
             terminate.append([terminated])
             padded.append([0.])
             episode_reward += reward
             step += 1
-
-            # if terminated:
-            #     time.sleep(1)
 
             if self.args.epsilon_anneal_scale == 'step':
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
@@ -113,15 +117,7 @@ class RolloutWorker:
         o = o[:-1]
         s = s[:-1]
 
-        # avail_actions = []
-        # for agent_id in range(self.num_agents):
-            # avail_action = self.env.get_avail_agent_actions(agent_id)
-            # avail_actions.append(avail_action)
-        # avail_u.append(avail_actions)
-        # avail_u_next = avail_u[1:]
-        # avail_u = avail_u[:-1]
-
-        for i in range(step, self.args.max_episode_steps):  # 没有的字段用0填充，并且padded为1
+        for i in range(step, self.args.max_episode_steps):
             o.append(np.zeros((self.num_agents, self.obs_space)))
             u.append(np.zeros([self.num_agents, 1]))
             s.append(np.zeros(self.state_space))
@@ -129,8 +125,6 @@ class RolloutWorker:
             o_next.append(np.zeros((self.num_agents, self.obs_space)))
             s_next.append(np.zeros(self.state_space))
             u_onehot.append(np.zeros((self.num_agents, self.num_actions)))
-            # avail_u.append(np.zeros((self.n_agents, self.n_actions)))
-            # avail_u_next.append(np.zeros((self.n_agents, self.n_actions)))
             padded.append([1.])
             terminate.append([1.])
 
@@ -152,5 +146,5 @@ class RolloutWorker:
         if not evaluate:
             self.epsilon = epsilon
 
-        return episode, episode_reward
+        return episode, episode_reward, plot_count_per_actions, plot_episode_requested_agents
 
