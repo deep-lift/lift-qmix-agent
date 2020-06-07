@@ -19,6 +19,7 @@ yyyymmddHHMMSS = datetime.today().strftime('%Y%m%d%H%M%S')
 # 재영님 여기에 데이터 기록 해볼께요~~ 플롯 찍어보기 위한 변수들 (평가 + 훈련 구분없이 다 저장하게 함)
 plot_episode_rewards = []  # 이건 에피소드 받은 리워드 ( 에이전트 동안 받은 개별 리워드 다 더한 값)
 plot_episode_valid_steps = []  # 에피소드별 action 요청이 하나라도 들어온 step 카운트
+plot_episode_count_requested_agent = np.asarray([0] * N_AGENTS)  # 에이전트별 요청받은 에이전트 대수 기록
 plot_episode_requested_agents = np.asarray([0] * N_AGENTS)
 plot_count_per_actions = np.asarray([0] * N_ACTION)
 
@@ -44,9 +45,10 @@ for epoch in range(args.n_epoch):
 
     episodes = []
     for e in range(args.n_episodes):
-        episode, episode_reward, episode_count_per_actions, episode_episode_requested_agents = worker.generate_episode(e)
+        episode, episode_reward, episode_count_per_actions, episode_episode_requested_agents, episode_episode_count_requested_agent = worker.generate_episode(e)
         plot_count_per_actions += episode_count_per_actions
         plot_episode_requested_agents += episode_episode_requested_agents
+        plot_episode_count_requested_agent += episode_episode_count_requested_agent
         plot_episode_rewards.append(episode_reward)
         episodes.append(episode)
 
@@ -62,23 +64,28 @@ for epoch in range(args.n_epoch):
         agents.train(mini_batch, train_steps)
         train_steps += 1
 
-    plt.cla()
-    plt.subplot(3, 1, 1)
+    figure, axes = plt.subplots(nrows=2, ncols=2)
+
+    plt.rcParams["figure.figsize"] = (50, 50)
+    plt.rcParams['lines.linewidth'] = 4
+
+
     index1 = ["Action 0", "Action 1", "Action 2"]
-    plt.bar(x=index1, height=plot_count_per_actions)
-    plt.xlabel('Action')
-    plt.ylabel('Cumulative action count from network output')
+    axes[0, 0].bar(x=index1, height=plot_count_per_actions)
+    axes[0, 0].set_title('Cumulative count over action space')
 
-    plt.subplot(3, 1, 2)
-    index2 = ["1 agents", "2 agents", "3 agents", "4 agents"]
-    plt.bar(x=index2, height=plot_episode_requested_agents)
-    plt.xlabel('number of valid agents')
-    plt.ylabel('Cumulative count of valid agent asking actions')
+    index2 = ["1 Agents", "2 Agents", "3 Agents", "4 Agents"]
+    axes[0, 1].bar(x=index2, height=plot_episode_count_requested_agent)
+    axes[0, 1].set_title('Number of valid agents over episode')
 
-    plt.subplot(3, 1, 3)
-    plt.plot(range(len(plot_episode_rewards)), plot_episode_rewards)
-    plt.xlabel('epoch*{}'.format(args.evaluate_cycle))
-    plt.ylabel('episode_rewards')
+    index3 = ["Agent 1", "Agent 2", "Agent 3", "Agent 4"]
+    axes[1, 0].bar(x=index3, height=plot_episode_requested_agents)
+    axes[1, 0].set_title('Requested times of each agent')
+
+    axes[1, 1].plot(range(len(plot_episode_rewards)), plot_episode_rewards)
+    axes[1, 1].set_title('episode rewards')
+
+    figure.tight_layout()
 
     plt.savefig(save_path + '/plt_{}.png'.format(1), format='png')
     # np.save(save_path + '/win_rates_{}'.format(1), win_rates)

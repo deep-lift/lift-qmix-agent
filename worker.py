@@ -41,11 +41,20 @@ class RolloutWorker:
         requested_agents = np.asarray([True] * N_AGENTS)
         plot_count_per_actions = np.asarray([0] * N_ACTION)
         plot_episode_requested_agents = np.asarray([0] * N_AGENTS)
+        plot_episode_count_requested_agent = np.asarray([0] * N_AGENTS)
 
         while not terminated:
 
             # 에이전트 액션별 카운트 (네트워크에서 출력한 에이전트의 액션 빈도)
             plot_episode_requested_agents[requested_agents] += 1
+
+            # 요청 에이전트 수 기록
+            count_of_requested_agents = 0
+            for b in requested_agents:
+                if b:
+                    count_of_requested_agents += 1
+
+            plot_episode_count_requested_agent[count_of_requested_agents - 1] += 1
 
             """
             State and Observations
@@ -72,7 +81,6 @@ class RolloutWorker:
                     last_action[agent_id] = action_onehot
                     
                     # 여기에 액션의 출력과 요청 에이전트 수를 기록하기 위함
-                    plot_episode_requested_agents[agent_id] +=1
                     plot_count_per_actions[action] +=1
                 else:
                     action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, epsilon, evaluate)
@@ -146,5 +154,5 @@ class RolloutWorker:
         if not evaluate:
             self.epsilon = epsilon
 
-        return episode, episode_reward, plot_count_per_actions, plot_episode_requested_agents
+        return episode, episode_reward, plot_count_per_actions, plot_episode_requested_agents, plot_episode_count_requested_agent
 
