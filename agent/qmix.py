@@ -1,11 +1,12 @@
 import torch
 import os
-from qmix_net import RNN
-from qmix_net import QMixNet
+from network.qmix_net import RNN
+from network.qmix_net import QMixNet
 
 
 class QMIX:
     def __init__(self, args):
+        self.name = 'qmix'
         self.num_actions = args.num_actions
         self.num_agents = args.num_agents
         self.state_space = args.state_space
@@ -26,7 +27,7 @@ class QMIX:
             self.target_rnn.cuda()
             self.eval_qmix_net.cuda()
             self.target_qmix_net.cuda()
-        self.model_dir = args.model_dir + '/' + args.alg + '/' + args.map
+        self.model_dir = args.model_dir + '/' + args.alg
 
         if self.args.load_model:
             if os.path.exists(self.model_dir + '/rnn_net_params.pkl'):
@@ -49,16 +50,17 @@ class QMIX:
         self.target_hidden = None
         print('Init QMIX')
 
-    def learn(self, batch, max_episode_len, train_step, epsilon=None):  # train_step表示是第几次学习，用来控制更新target_net网络的参数
+    def learn(self, batch, max_episode_len, train_step, epsilon=None):
         episode_num = batch['o'].shape[0]
         self.init_hidden(episode_num)
         for key in batch.keys():
             if key == 'u':
                 batch[key] = torch.tensor(batch[key], dtype=torch.long)
             else:
-                batch[key] = torch.tensor(batch[key], dtype=torch.float32)
+                batch[key] = torch.tensor(
+                    batch[key], dtype=torch.float32)
         s, s_next, u, r, avail_u, avail_u_next, terminated = batch['s'], batch['s_next'], batch['u'], \
-                                                             batch['r'],  batch['avail_u'], batch['avail_u_next'],\
+                                                             batch['r'], batch['avail_u'], batch['avail_u_next'], \
                                                              batch['terminated']
         mask = 1 - batch["padded"].float()
 
@@ -71,7 +73,6 @@ class QMIX:
             terminated = terminated.cuda()
             mask = mask.cuda()
         q_evals = torch.gather(q_evals, dim=3, index=u).squeeze(3)
-
         q_targets[avail_u_next == 0.0] = - 9999999
         q_targets = q_targets.max(dim=3)[0]
 
@@ -81,7 +82,7 @@ class QMIX:
         targets = r + self.args.gamma * q_total_target * (1 - terminated)
 
         td_error = (q_total_eval - targets.detach())
-        masked_td_error = mask * td_error  # 抹掉填充的经验的td_error
+        masked_td_error = mask * td_error
 
         # loss = masked_td_error.pow(2).mean()
         # 쓸모없는 경험이 여전히 많기 때문에 평균을 직접 사용할 수 없으므로 실제 평균은 필수이며 실제 경험입니다.
@@ -92,8 +93,7 @@ class QMIX:
         self.optimizer.step()
 
         if train_step > 0 and train_step % self.args.target_update_cycle == 0:
-            self.target_rnn.load_state_dict(self.eval_rnn.state_dict())
-            self.target_qmix_net.load_state_dict(self.eval_qmix_net.state_dict())
+            self.target_dqn_net.load_state_dict(self.eval_qmix_net.state_dict())
 
     def _get_inputs(self, batch, transition_idx):
         obs, obs_next, u_onehot = batch['o'][:, transition_idx], \
@@ -135,7 +135,6 @@ class QMIX:
             q_eval, self.eval_hidden = self.eval_rnn(inputs, self.eval_hidden)
             q_target, self.target_hidden = self.target_rnn(inputs_next, self.target_hidden)
 
-            # 把q_eval维度重新变回(8, ,num_actions)
             q_eval = q_eval.view(episode_num, self.num_agents, -1)
             q_target = q_target.view(episode_num, self.num_agents, -1)
             q_evals.append(q_eval)

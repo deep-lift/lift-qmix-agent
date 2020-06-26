@@ -34,7 +34,7 @@ class ReplayBuffer:
         with self.lock:
             idxs = self._get_storage_idx(inc=batch_size)
 
-            # store the informations
+            # this source code makes me motivated!!
             self.buffers['o'][idxs] = episode_batch['o']
             self.buffers['u'][idxs] = episode_batch['u']
             self.buffers['s'][idxs] = episode_batch['s']
@@ -73,3 +73,24 @@ class ReplayBuffer:
             idx = idx[0]
 
         return idx
+
+
+
+class ReplayMemory(object):
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.memory = []
+        self.position = 0
+
+    def push(self, *args):
+        """Saves a transition."""
+        if len(self.memory) < self.capacity:
+            self.memory.append(None)
+        self.memory[self.position] = Transition(*args)
+        self.position = (self.position + 1) % self.capacity
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)

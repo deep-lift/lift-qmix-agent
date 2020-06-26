@@ -1,11 +1,8 @@
-from env import *
-from collections import deque
-
-from env import *
+from env_args import *
 from worker import RolloutWorker
 from agent import Agents
 import matplotlib.pyplot as plt
-from replay_buffer import ReplayBuffer
+from util.replay_buffer import ReplayBuffer
 
 
 args = get_common_args()

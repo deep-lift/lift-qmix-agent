@@ -1,22 +1,18 @@
-from env import *
-from collections import deque
-
-from worker import RolloutWorker
-from agent import Agents
-import matplotlib.pyplot as plt
-from replay_buffer import ReplayBuffer
-
-import elevator
+from env_args import *
 from argslist import *
+from agent.agent import Agents
+from agent.qmix import QMIX
+from worker import RolloutWorker
+import elevator
+from util.replay_buffer import ReplayBuffer
+
+import matplotlib.pyplot as plt
 import numpy as np
-import random
 import os
 from datetime import datetime
-import seaborn as sns
 
-yyyymmddHHMMSS = datetime.today().strftime('%Y%m%d%H%M%S')
+current = datetime.today().strftime('%Y%m%d%H%M%S')
 
-# 재영님 여기에 데이터 기록 해볼께요~~ 플롯 찍어보기 위한 변수들 (평가 + 훈련 구분없이 다 저장하게 함)
 plot_episode_rewards = []  # 이건 에피소드 받은 리워드 ( 에이전트 동안 받은 개별 리워드 다 더한 값)
 plot_episode_valid_steps = []  # 에피소드별 action 요청이 하나라도 들어온 step 카운트
 plot_episode_count_requested_agent = np.asarray([0] * N_AGENTS)  # 에이전트별 요청받은 에이전트 대수 기록
@@ -26,7 +22,8 @@ plot_count_per_actions = np.asarray([0] * N_ACTION)
 args = get_common_args()
 args = qmix_args(args)
 
-agents = Agents(args)
+policy = QMIX(args)
+agents = Agents(args, policy)
 env = elevator.ElevatorEnv(SCREEN_WIDTH, SCREEN_HEIGHT, False)
 
 worker = RolloutWorker(env, agents, args)
@@ -38,11 +35,10 @@ win_rates = []
 episode_rewards = []
 train_steps = 0
 
-save_path = args.result_dir + '/' + yyyymmddHHMMSS
+save_path = args.result_dir + '/' + current
 os.makedirs(save_path, exist_ok=True)
 
 for epoch in range(args.n_epoch):
-
     episodes = []
     for e in range(args.n_episodes):
         episode, episode_reward, episode_count_per_actions, episode_episode_requested_agents, episode_episode_count_requested_agent = worker.generate_episode(e)
@@ -66,18 +62,20 @@ for epoch in range(args.n_epoch):
 
     figure, axes = plt.subplots(nrows=2, ncols=2)
 
-    plt.rcParams["figure.figsize"] = (50, 50)
+    # plt.rcParams["figure.figsize"] = (50, 50)
     plt.rcParams['lines.linewidth'] = 4
 
     index1 = ["Action 0", "Action 1", "Action 2"]
     axes[0, 0].bar(x=index1, height=plot_count_per_actions)
     axes[0, 0].set_title('Cumulative count over action space')
 
-    index2 = ["1 Agents", "2 Agents", "3 Agents", "4 Agents"]
+    # index2 = ["1 Agents", "2 Agents", "3 Agents", "4 Agents"]
+    index2 = [f'{i+1} Agents' for i in range(N_AGENTS)]
     axes[0, 1].bar(x=index2, height=plot_episode_count_requested_agent)
     axes[0, 1].set_title('Number of valid agents over episode')
 
-    index3 = ["Agent 1", "Agent 2", "Agent 3", "Agent 4"]
+    # index3 = ["Agent 1", "Agent 2", "Agent 3", "Agent 4"]
+    index3 = [f'Agent {i + 1}' for i in range(N_AGENTS)]
     axes[1, 0].bar(x=index3, height=plot_episode_requested_agents)
     axes[1, 0].set_title('Requested times of each agent')
 
@@ -85,8 +83,7 @@ for epoch in range(args.n_epoch):
     axes[1, 1].set_title('episode rewards')
 
     # figure.tight_layout()
-
-    plt.savefig(save_path + '/plt_{}.png'.format(1), format='png')
+    plt.savefig(save_path + '/plt_{}.png'.format('qmix'), format='png')
     # np.save(save_path + '/win_rates_{}'.format(1), win_rates)
     # np.save(save_path + '/episode_rewards_{}'.format(1), episode_rewards)
 

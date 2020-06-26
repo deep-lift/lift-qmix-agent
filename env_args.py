@@ -4,6 +4,50 @@ import numpy as np
 from argslist import *
 
 
+def dqn_args(args):
+    args.nn_hidden_dim = 64
+    args.lr = 5e-4
+
+    # epsilon greedy
+    args.epsilon = 1
+    args.min_epsilon = 0.05
+    anneal_steps = 500000
+    args.anneal_epsilon = (args.epsilon - args.min_epsilon) / anneal_steps
+    args.epsilon_anneal_scale = 'step'
+
+    # the number of the epoch to train the agent
+    args.n_epoch = 2000000
+
+    # the number of the episodes in one epoch
+    args.n_episodes = 5
+
+    # the number of the train steps in one epoch
+    args.train_steps = 1
+
+    # how often to save the model
+    args.save_cycle = 5000
+
+    # # how often to evaluate
+    args.evaluate_cycle = 10
+
+    # experience replay
+    args.batch_size = 32
+    args.buffer_size = int(5e3)
+
+    # how often to save the model
+    args.save_cycle = 5000
+
+    # how often to update the target_net
+    args.target_update_cycle = 200
+
+    # prevent gradient explosion
+    args.grad_norm_clip = 10
+
+    return args
+
+
+
+
 def qmix_args(args):
     args.rnn_hidden_dim = 64
     args.two_hyper_layers = False
@@ -13,7 +57,7 @@ def qmix_args(args):
     # epsilon greedy
     args.epsilon = 1
     args.min_epsilon = 0.05
-    anneal_steps = 50000
+    anneal_steps = 500000
     args.anneal_epsilon = (args.epsilon - args.min_epsilon) / anneal_steps
     args.epsilon_anneal_scale = 'step'
 
@@ -21,7 +65,7 @@ def qmix_args(args):
     args.n_epoch = 2000000
 
     # the number of the episodes in one epoch
-    args.n_episodes = 3
+    args.n_episodes = 5
 
     # the number of the train steps in one epoch
     args.train_steps = 1
@@ -52,24 +96,21 @@ def get_common_args():
     parser = argparse.ArgumentParser()
 
     # the environment setting
-    parser.add_argument('--obs_space', type=int, default=15, help='local information from each agent')
-    parser.add_argument('--state_space', type=int, default=31, help='global information shared by all agents')
+    parser.add_argument('--obs_space', type=int, default=N_OBSERVATION, help='local information from each agent')
+    parser.add_argument('--state_space', type=int, default=N_STATE, help='global information shared by all agents')
 
-    parser.add_argument('--action_space', type=int, default=3, help='action space')
-    parser.add_argument('--num_actions', type=int, default=3, help='number of agents')
-    parser.add_argument('--num_agents', type=int, default=4, help='number of agents')
+#    parser.add_argument('--action_space', type=int, default=N_ACTION, help='action space')
+    parser.add_argument('--num_actions', type=int, default=N_ACTION, help='number of agents')
+    parser.add_argument('--num_agents', type=int, default=N_AGENTS, help='number of agents')
     parser.add_argument('--max_episode_steps', type=int, default=N_MAX_STEPS, help='number of agents')
 
-    parser.add_argument('--difficulty', type=str, default='7', help='the difficulty of the game')
-    parser.add_argument('--game_version', type=str, default='latest', help='the version of the game')
-    parser.add_argument('--map', type=str, default='3m', help='the map of the game')
     parser.add_argument('--seed', type=int, default=123, help='random seed')
     parser.add_argument('--step_mul', type=int, default=8, help='how many steps to make an action')
     parser.add_argument('--replay_dir', type=str, default='', help='the directory of save the replay')
 
     parser.add_argument('--alg', type=str, default='qmix', help='the algorithm to train the agent')
-    parser.add_argument('--last_action', type=bool, default=True, help='whether to use the last action to choose action')
-    parser.add_argument('--reuse_network', type=bool, default=True, help='whether to use one network for all agents')
+    parser.add_argument('--last_action', type=bool, default=False, help='whether to use the last action to choose action')
+    parser.add_argument('--reuse_network', type=bool, default=False, help='whether to use one network for all agents')
     parser.add_argument('--gamma', type=float, default=0.99, help='discount factor')
     parser.add_argument('--optimizer', type=str, default="RMS", help='optimizer')
     parser.add_argument('--n_evaluate_episode', type=int, default=5, help='number of the episode to evaluate the agent')
@@ -77,7 +118,7 @@ def get_common_args():
     parser.add_argument('--result_dir', type=str, default='./result', help='result directory of the policy')
     parser.add_argument('--load_model', type=bool, default=False, help='whether to load the pretrained model')
     parser.add_argument('--learn', type=bool, default=True, help='whether to train the model')
-    parser.add_argument('--cuda', type=bool, default=False, help='whether to use the GPU')
+    parser.add_argument('--cuda', type=bool, default=True, help='whether to use the GPU')
     parser.add_argument('--threshold', type=float, default=19.9, help='threshold to judge whether win')
     args = parser.parse_args()
     return args
