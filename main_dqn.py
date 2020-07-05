@@ -18,7 +18,7 @@ plot_episode_valid_steps = []  # 에피소드별 action 요청이 하나라도 �
 plot_episode_count_requested_agent = np.asarray([0] * N_AGENTS)  # 에이전트별 요청받은 에이전트 대수 기록
 plot_episode_requested_agents = np.asarray([0] * N_AGENTS)
 plot_count_per_actions = np.asarray([0] * N_ACTION)
-
+plot_episode_epsilon = []
 args = get_common_args()
 
 ## change policy as a DQN
@@ -43,11 +43,12 @@ os.makedirs(save_path, exist_ok=True)
 for epoch in range(args.n_epoch):
     episodes = []
     for e in range(args.n_episodes):
-        episode, episode_reward, episode_count_per_actions, episode_episode_requested_agents, episode_episode_count_requested_agent = worker.generate_episode(e)
+        episode, episode_reward, episode_count_per_actions, episode_episode_requested_agents, episode_episode_count_requested_agent, current_epsilon = worker.generate_episode(e)
         plot_count_per_actions += episode_count_per_actions
         plot_episode_requested_agents += episode_episode_requested_agents
         plot_episode_count_requested_agent += episode_episode_count_requested_agent
         plot_episode_rewards.append(episode_reward)
+        plot_episode_epsilon.append(current_epsilon)
         episodes.append(episode)
 
     episode_batch = episodes[0]
@@ -62,9 +63,9 @@ for epoch in range(args.n_epoch):
         agents.train(mini_batch, train_steps)
         train_steps += 1
 
-    figure, axes = plt.subplots(nrows=2, ncols=2)
+    figure, axes = plt.subplots(nrows=3, ncols=5)
 
-    # plt.rcParams["figure.figsize"] = (50, 50)
+    plt.rcParams["figure.figsize"] = (50, 50)
     plt.rcParams['lines.linewidth'] = 4
 
     index1 = ["Action 0", "Action 1", "Action 2"]
@@ -73,19 +74,22 @@ for epoch in range(args.n_epoch):
 
     # index2 = ["1 Agents", "2 Agents", "3 Agents", "4 Agents"]
     index2 = [f'{i+1} Agents' for i in range(N_AGENTS)]
-    axes[0, 1].bar(x=index2, height=plot_episode_count_requested_agent)
-    axes[0, 1].set_title('Number of valid agents over episode')
+    axes[0, 2].bar(x=index2, height=plot_episode_count_requested_agent)
+    axes[0, 2].set_title('Number of valid agents over episode')
 
     # index3 = ["Agent 1", "Agent 2", "Agent 3", "Agent 4"]
     index3 = [f'Agent {i + 1}' for i in range(N_AGENTS)]
-    axes[1, 0].bar(x=index3, height=plot_episode_requested_agents)
-    axes[1, 0].set_title('Requested times of each agent')
+    axes[0, 4].bar(x=index3, height=plot_episode_requested_agents)
+    axes[0, 4].set_title('Requested times of each agent')
 
-    axes[1, 1].plot(range(len(plot_episode_rewards)), plot_episode_rewards)
-    axes[1, 1].set_title('episode rewards')
+    axes[2, 0].plot(range(len(plot_episode_rewards)), plot_episode_rewards)
+    axes[2, 0].set_title('episode rewards')
+
+    axes[2, 2].plot(range(len(plot_episode_epsilon)), plot_episode_epsilon)
+    axes[2, 2].set_title('epsilon')
 
     # figure.tight_layout()
-    plt.savefig(save_path + '/plt_{}.png'.format('qmix'), format='png')
+    plt.savefig(save_path + '/plt_{}.png'.format('dqn'), format='png')
     # np.save(save_path + '/win_rates_{}'.format(1), win_rates)
     # np.save(save_path + '/episode_rewards_{}'.format(1), episode_rewards)
 

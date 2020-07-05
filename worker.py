@@ -161,4 +161,4 @@ class RolloutWorker:
         if not evaluate:
             self.epsilon = epsilon
 
-        return episode, ep_reward, plot_cnt_per_actions, plot_ep_requested_agents, plot_ep_cnt_requested_agent
+        return episode, ep_reward, plot_cnt_per_actions, plot_ep_requested_agents, plot_ep_cnt_requested_agent, epsilon

@@ -76,17 +76,14 @@ class Agents:
 
         if self.policy.name == 'qmix':
             inputs = obs.copy()
-
             agent_id = np.zeros(self.num_agents)
             agent_id[agent_num] = 1.
-
             if self.args.last_action:
                 inputs = np.hstack((inputs, last_action))
             if self.args.reuse_network:
                 inputs = np.hstack((inputs, agent_id))
         elif self.policy.name == 'dqn':
             inputs = np.hstack((obs, state))
-
         if self.policy.name == 'qmix':
             hidden_state = self.policy.eval_hidden[:, agent_num, :]
             if self.args.cuda:
@@ -112,12 +109,12 @@ class Agents:
         episode_num = terminated.shape[0]
 
         max_episode_len = 0
-
         for episode_idx in range(episode_num):
             for transition_idx in range(self.args.max_episode_steps):
-                if transition_idx + 1 >= max_episode_len:
-                    max_episode_len = transition_idx + 1
-                break
+                if terminated[episode_idx , transition_idx, 0] == 1:
+                    if transition_idx + 1 >= max_episode_len:
+                        max_episode_len = transition_idx + 1
+                    break
         return max_episode_len
 
     def train(self, batch, train_step, epsilon=None):

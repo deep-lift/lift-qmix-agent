@@ -19,7 +19,7 @@ def dqn_args(args):
     args.n_epoch = 2000000
 
     # the number of the episodes in one epoch
-    args.n_episodes = 5
+    args.n_episodes = 10
 
     # the number of the train steps in one epoch
     args.train_steps = 1
@@ -42,6 +42,7 @@ def dqn_args(args):
 
     # prevent gradient explosion
     args.grad_norm_clip = 10
+    args.alg = 'dqn'
 
     return args
 

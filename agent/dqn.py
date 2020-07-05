@@ -7,7 +7,6 @@ import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
 class DQN:
 
     def __init__(self, args):
@@ -56,9 +55,24 @@ class DQN:
         episode_num = obs.shape[0]
         inputs, inputs_next = [], []
         #inputs.append(np.hstack((obs, state)))
-        inputs.append(torch.tensor(np.concatenate((obs, np.vstack((state, state)).reshape(episode_num, -1, 31)), axis=-1), dtype=torch.float32, device=device))
+
+        # todo : 아예 batch 만들때 필요없는 차원 생성 안하게 만들것
+        obs = obs.squeeze()
+        obs_next = obs_next.squeeze()
+
+        inputs.append(
+            torch.tensor(
+                np.concatenate((obs, state), axis=-1), dtype=torch.float32, device=device
+            )
+        )
+        # inputs.append(torch.tensor(np.concatenate((obs, np.vstack((state, state)).reshape(episode_num, -1, 31)), axis=-1), dtype=torch.float32, device=device))
+
         #inputs_next.append(np.hstack((obs_next, state_next)))
-        inputs_next.append(torch.tensor(np.concatenate((obs_next, np.vstack((state_next, state_next)).reshape(episode_num, -1, 31)), axis=-1), dtype=torch.float32, device=device))
+        inputs_next.append(torch.tensor(
+            np.concatenate((obs_next, state_next), axis=-1),
+            dtype=torch.float32, device=device)
+        )
+        # inputs_next.append(torch.tensor(np.concatenate((obs_next, np.vstack((state_next, state_next)).reshape(episode_num, -1, 31)), axis=-1), dtype=torch.float32, device=device))
 
         if self.args.last_action:
             if transition_idx == 0:  # 첫 경험이라면, 이전 행동을 0 벡터로하십시오
@@ -124,9 +138,15 @@ class DQN:
         q_evals = torch.gather(q_evals, dim=3, index=u).squeeze(3)
 
         q_targets = q_targets.max(dim=3)[0]
+        o = o.squeeze()
+        o_next = o_next.squeeze()
+        q_total_eval = self.eval_dqn_net(torch.cat((o, s),dim=-1))
+        q_total_target = self.target_dqn_net(torch.cat((o_next,s_next), dim=-1))
+
+
         # todo : check this torch.repeat_interleave
-        q_total_eval = self.eval_dqn_net(torch.cat((o, torch.repeat_interleave(s, repeats=2, dim=1).unsqueeze(1)),dim=-1))
-        q_total_target = self.target_dqn_net(torch.cat((o_next,torch.repeat_interleave(s_next, repeats=2, dim=1).unsqueeze(1)),dim=-1))
+        # q_total_eval = self.eval_dqn_net(torch.cat((o, torch.repeat_interleave(s, repeats=2, dim=1).unsqueeze(1)),dim=-1))
+        # q_total_target = self.target_dqn_net(torch.cat((o_next,torch.repeat_interleave(s_next, repeats=2, dim=1).unsqueeze(1)),dim=-1))
 
         targets = r + self.args.gamma * q_total_target * (1 - terminated)
 
