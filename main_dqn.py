@@ -50,6 +50,7 @@ for epoch in range(args.n_epoch):
         plot_episode_rewards.append(episode_reward)
         plot_episode_epsilon.append(current_epsilon)
         episodes.append(episode)
+        print(f'episode : {e}, reward : {episode_reward}, epsilon : {current_epsilon}' )
 
     episode_batch = episodes[0]
     episodes.pop(0)

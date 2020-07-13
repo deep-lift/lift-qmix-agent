@@ -85,7 +85,7 @@ def qmix_args(args):
     args.save_cycle = 5000
 
     # how often to update the target_net
-    args.target_update_cycle = 200
+    args.target_update_cycle = 2000
 
     # prevent gradient explosion
     args.grad_norm_clip = 10

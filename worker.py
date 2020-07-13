@@ -105,10 +105,14 @@ class RolloutWorker:
 
             reward, terminated, requested_agents = self.env.step_split(actions)
             terminated = all(terminated)
-            reward = np.sum(reward)  # todo : 개별 리워드의 합으로 global reward 계산
 
-            if step == self.args.max_episode_steps - 1:  # 종료조건 추가
-                terminated = True
+            # todo : 여기가 꼬인듯. 여기에서 액션 요청없는 상태에서 끝났을땐 어떻게 해야하는가? ㅠ.ㅠ
+            reward2 = 0
+            while not any(requested_agents) and not terminated:
+                reward2, terminated, requested_agents = self.env.step_split([])
+                terminated = all(terminated)
+            reward = np.sum(reward)  # todo : 개별 리워드의 합으로 global reward 계산
+            reward += reward2
 
             o.append(obs)
             s.append(state)
@@ -122,10 +126,6 @@ class RolloutWorker:
 
             if self.args.epsilon_anneal_scale == 'step':
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
-
-            while not any(requested_agents):
-                reward, terminated, requested_agents = self.env.step_split([])
-                terminated = all(terminated)
 
         o.append(obs)
         s.append(state)
