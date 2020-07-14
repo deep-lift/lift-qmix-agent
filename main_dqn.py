@@ -5,12 +5,14 @@ from agent.dqn import DQN
 from worker import RolloutWorker
 import elevator
 from util.replay_buffer import ReplayBuffer
+from tensorboardX import SummaryWriter
 
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 from datetime import datetime
 
+writer = SummaryWriter("tensorboardx")
 current = datetime.today().strftime('%Y%m%d%H%M%S')
 
 plot_episode_rewards = []  # 이건 에피소드 받은 리워드 ( 에이전트 동안 받은 개별 리워드 다 더한 값)
@@ -40,9 +42,11 @@ train_steps = 0
 save_path = args.result_dir + '/' + current
 os.makedirs(save_path, exist_ok=True)
 
+n_episode = 0
 for epoch in range(args.n_epoch):
     episodes = []
     for e in range(args.n_episodes):
+        n_episode = n_episode + 1
         episode, episode_reward, episode_count_per_actions, episode_episode_requested_agents, episode_episode_count_requested_agent, current_epsilon = worker.generate_episode(e)
         plot_count_per_actions += episode_count_per_actions
         plot_episode_requested_agents += episode_episode_requested_agents
@@ -50,6 +54,7 @@ for epoch in range(args.n_epoch):
         plot_episode_rewards.append(episode_reward)
         plot_episode_epsilon.append(current_epsilon)
         episodes.append(episode)
+        print(f'{n_episode} episode reward: {episode_reward}')
 
     episode_batch = episodes[0]
     episodes.pop(0)
@@ -63,37 +68,37 @@ for epoch in range(args.n_epoch):
         agents.train(mini_batch, train_steps)
         train_steps += 1
 
-    figure, axes = plt.subplots(nrows=3, ncols=5)
+        writer.add_scalar('episode rewards', episode_reward, n_episode)
+        writer.add_scalar('epsilon', current_epsilon, n_episode)
 
-    plt.rcParams["figure.figsize"] = (50, 50)
-    plt.rcParams['lines.linewidth'] = 4
+    if epoch != 0 and epoch % PRINT_INTERVAL == 0:
+        figure, axes = plt.subplots(nrows=0, ncols=5)
 
-    index1 = ["Action 0", "Action 1", "Action 2"]
-    axes[0, 0].bar(x=index1, height=plot_count_per_actions)
-    axes[0, 0].set_title('Cumulative count over action space')
+        plt.rcParams["figure.figsize"] = (50, 50)
+        plt.rcParams['lines.linewidth'] = 4
 
-    # index2 = ["1 Agents", "2 Agents", "3 Agents", "4 Agents"]
-    index2 = [f'{i+1} Agents' for i in range(N_AGENTS)]
-    axes[0, 2].bar(x=index2, height=plot_episode_count_requested_agent)
-    axes[0, 2].set_title('Number of valid agents over episode')
+        index1 = ["Action 0", "Action 1", "Action 2"]
+        axes[0, 0].bar(x=index1, height=plot_count_per_actions)
+        axes[0, 0].set_title('Cumulative count over action space')
+        # writer.add_histogram('Cumulative count over action space', episode_count_per_actions)
 
-    # index3 = ["Agent 1", "Agent 2", "Agent 3", "Agent 4"]
-    index3 = [f'Agent {i + 1}' for i in range(N_AGENTS)]
-    axes[0, 4].bar(x=index3, height=plot_episode_requested_agents)
-    axes[0, 4].set_title('Requested times of each agent')
+        index2 = ["1 Agents", "2 Agents", "3 Agents", "4 Agents"]
+        index2 = [f'{i+1} Agents' for i in range(N_AGENTS)]
+        axes[0, 2].bar(x=index2, height=plot_episode_count_requested_agent)
+        axes[0, 2].set_title('Number of valid agents over episode')
+        # writer.add_histogram('Number of valid agents over episode', episode_episode_requested_agents)
 
-    axes[2, 0].plot(range(len(plot_episode_rewards)), plot_episode_rewards)
-    axes[2, 0].set_title('episode rewards')
+        index3 = ["Agent 1", "Agent 2", "Agent 3", "Agent 4"]
+        index3 = [f'Agent {i + 1}' for i in range(N_AGENTS)]
+        axes[0, 4].bar(x=index3, height=plot_episode_requested_agents)
+        axes[0, 4].set_title('Requested times of each agent')
+        # writer.add_histogram('Requested times of each agent', episode_episode_count_requested_agent)
+        # figure.tight_layout()
+        plt.savefig(save_path + '/plt_{}.png'.format('dqn'), format='png')
+        np.save(save_path + '/win_rates_{}'.format(1), win_rates)
+        np.save(save_path + '/episode_rewards_{}'.format(1), episode_rewards)
 
-    axes[2, 2].plot(range(len(plot_episode_epsilon)), plot_episode_epsilon)
-    axes[2, 2].set_title('epsilon')
-
-    # figure.tight_layout()
-    plt.savefig(save_path + '/plt_{}.png'.format('dqn'), format='png')
-    # np.save(save_path + '/win_rates_{}'.format(1), win_rates)
-    # np.save(save_path + '/episode_rewards_{}'.format(1), episode_rewards)
-
-    plt.close()
+        plt.close()
 
 plt.cla()
 plt.subplot(2, 1, 1)
