@@ -51,7 +51,9 @@ class RolloutWorker:
         o, u, u_onehot, r, s, terminate, padded = [], [], [], [], [], [], []
 
         self.env.reset()
-        self.env.render()
+
+        if RENDER:
+            self.env.render()
 
         terminated = False
         step = 0
@@ -103,12 +105,19 @@ class RolloutWorker:
                     actions_onehot.append(action_onehot)
                     last_action[agent_id] = action_onehot
 
+            # print(f'actions : {actions}')
             reward, terminated, requested_agents = self.env.step_split(actions)
-            terminated = all(terminated)
-            reward = np.sum(reward)  # todo : 개별 리워드의 합으로 global reward 계산
 
-            if step == self.args.max_episode_steps - 1:  # 종료조건 추가
-                terminated = True
+            terminated = all(terminated)
+
+            additional_reward = 0
+            while not any(requested_agents) and not terminated:
+                additional_reward, terminated, requested_agents = self.env.step_split([0] * N_AGENTS)
+                terminated = all(terminated)
+                additional_reward += np.sum(additional_reward)
+                # print(f'step : {step}, reward : {additional_reward}, termniated : {terminated}, requested_agents: {requested_agents}')
+            reward = np.sum(reward)  # todo : 개별 리워드의 합으로 global reward 계산
+            reward += np.sum(additional_reward)
 
             o.append(obs)
             s.append(state)
@@ -122,10 +131,6 @@ class RolloutWorker:
 
             if self.args.epsilon_anneal_scale == 'step':
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
-
-            while not any(requested_agents):
-                reward, terminated, requested_agents = self.env.step_split([])
-                terminated = all(terminated)
 
         o.append(obs)
         s.append(state)

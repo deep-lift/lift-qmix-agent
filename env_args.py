@@ -5,21 +5,21 @@ from argslist import *
 
 
 def dqn_args(args):
-    args.nn_hidden_dim = 64
-    args.lr = 5e-4
+    args.nn_hidden_dim = N_HIDDEN
+    args.lr = 2e-3
 
     # epsilon greedy
     args.epsilon = 1
     args.min_epsilon = 0.05
-    anneal_steps = 500000
+    anneal_steps = 900000
     args.anneal_epsilon = (args.epsilon - args.min_epsilon) / anneal_steps
     args.epsilon_anneal_scale = 'step'
 
     # the number of the epoch to train the agent
-    args.n_epoch = 2000000
+    args.n_epoch = 200000
 
     # the number of the episodes in one epoch
-    args.n_episodes = 10
+    args.n_episodes = 2
 
     # the number of the train steps in one epoch
     args.train_steps = 1
@@ -50,7 +50,7 @@ def dqn_args(args):
 
 
 def qmix_args(args):
-    args.rnn_hidden_dim = 64
+    args.rnn_hidden_dim = N_HIDDEN
     args.two_hyper_layers = False
     args.qmix_hidden_dim = 32
     args.lr = 5e-4
@@ -85,7 +85,7 @@ def qmix_args(args):
     args.save_cycle = 5000
 
     # how often to update the target_net
-    args.target_update_cycle = 200
+    args.target_update_cycle = 2000
 
     # prevent gradient explosion
     args.grad_norm_clip = 10
