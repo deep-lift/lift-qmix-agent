@@ -10,24 +10,42 @@ class ReplayBuffer:
         self.state_space = self.args.state_space
         self.obs_space = self.args.obs_space
         self.size = self.args.buffer_size
-        self.episode_limit = self.args.max_episode_steps
-
         self.current_idx = 0
         self.current_size = 0
 
-        self.buffers = {'o': np.empty([self.size, self.episode_limit, self.num_agents, self.obs_space]),
-                        'u': np.empty([self.size, self.episode_limit, self.num_agents, 1]),
-                        's': np.empty([self.size, self.episode_limit, self.state_space]),
-                        'r': np.empty([self.size, self.episode_limit, 1]),
-                        'o_next': np.empty([self.size, self.episode_limit, self.num_agents, self.obs_space]),
-                        's_next': np.empty([self.size, self.episode_limit, self.state_space]),
-                        'avail_u': np.empty([self.size, self.episode_limit, self.num_agents, self.num_actions]),
-                        'avail_u_next': np.empty([self.size, self.episode_limit, self.num_agents, self.num_actions]),
-                        'u_onehot': np.empty([self.size, self.episode_limit, self.num_agents, self.num_actions]),
-                        'padded': np.empty([self.size, self.episode_limit, 1]),
-                        'terminated': np.empty([self.size, self.episode_limit, 1])
+        if self.num_agents == 1:
+            self.buffers = {'o': np.empty([self.size, self.args.max_episode_steps, self.obs_space]),
+                            'u': np.empty([self.size, self.args.max_episode_steps, 1]),
+                            'r': np.empty([self.size, self.args.max_episode_steps, 1]),
+                            'o_next': np.empty([self.size, self.args.max_episode_steps, self.obs_space]),
+                            'padded': np.empty([self.size, self.args.max_episode_steps, 1]),
+                            'terminated': np.empty([self.size, self.args.max_episode_steps, 1])
+                            }
+        else:
+            self.buffers = {'o': np.empty([self.size, self.args.max_episode_steps, self.num_agents, self.obs_space]),
+                        'u': np.empty([self.size, self.args.max_episode_steps, self.num_agents, 1]),
+                        's': np.empty([self.size, self.args.max_episode_steps, self.state_space]),
+                        'r': np.empty([self.size, self.args.max_episode_steps, 1]),
+                        'o_next': np.empty([self.size, self.args.max_episode_steps, self.num_agents, self.obs_space]),
+                        's_next': np.empty([self.size, self.args.max_episode_steps, self.state_space]),
+                        'avail_u': np.empty([self.size, self.args.max_episode_steps, self.num_agents, self.num_actions]),
+                        'avail_u_next': np.empty([self.size, self.args.max_episode_steps, self.num_agents, self.num_actions]),
+                        'u_onehot': np.empty([self.size, self.args.max_episode_steps, self.num_agents, self.num_actions]),
+                        'padded': np.empty([self.size, self.args.max_episode_steps, 1]),
+                        'terminated': np.empty([self.size, self.args.max_episode_steps, 1])
                         }
         self.lock = threading.Lock()
+
+    def store_episode_vanilla(self, episode_batch):
+        batch_size = episode_batch['o'].shape[0]
+        with self.lock:
+            idxs = self._get_storage_idx(inc=batch_size)
+            # this source code makes me motivated!!
+            self.buffers['o'][idxs] = episode_batch['o']
+            self.buffers['u'][idxs] = np.expand_dims(episode_batch['u'], axis=-1)
+            self.buffers['r'][idxs] = np.expand_dims(episode_batch['r'], axis=-1)  # episode_batch['r']
+            self.buffers['o_next'][idxs] = episode_batch['o_next']
+            self.buffers['terminated'][idxs] = np.expand_dims(episode_batch['terminated'], axis=-1)  # episode_batch['terminated']
 
     def store_episode(self, episode_batch):
         batch_size = episode_batch['o'].shape[0]
@@ -73,7 +91,6 @@ class ReplayBuffer:
             idx = idx[0]
 
         return idx
-
 
 
 class ReplayMemory(object):

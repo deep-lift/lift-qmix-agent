@@ -5,24 +5,29 @@ from argslist import *
 
 
 def dqn_args(args):
+    args.alg = 'dqn'
     args.nn_hidden_dim = N_HIDDEN
     args.lr = 2e-3
 
     # epsilon greedy
     args.epsilon = 1
-    args.min_epsilon = 0.05
-    anneal_steps = 900000
+    args.min_epsilon = 0.1
+
+    anneal_steps = 10000
     args.anneal_epsilon = (args.epsilon - args.min_epsilon) / anneal_steps
     args.epsilon_anneal_scale = 'step'
 
     # the number of the epoch to train the agent
-    args.n_epoch = 200000
+    args.n_epoch = 5000
 
     # the number of the episodes in one epoch
-    args.n_episodes = 2
+    args.n_episodes = 1
 
     # the number of the train steps in one epoch
     args.train_steps = 1
+
+    # how often to update the target_net
+    args.target_update_cycle = 1
 
     # how often to save the model
     args.save_cycle = 5000
@@ -31,22 +36,13 @@ def dqn_args(args):
     args.evaluate_cycle = 10
 
     # experience replay
-    args.batch_size = 32
-    args.buffer_size = int(5e3)
-
-    # how often to save the model
-    args.save_cycle = 5000
-
-    # how often to update the target_net
-    args.target_update_cycle = 200
+    args.batch_size = BATCH_SIZE
+    args.buffer_size = REPLAY_MEM
 
     # prevent gradient explosion
     args.grad_norm_clip = 10
-    args.alg = 'dqn'
 
     return args
-
-
 
 
 def qmix_args(args):
@@ -58,7 +54,7 @@ def qmix_args(args):
     # epsilon greedy
     args.epsilon = 1
     args.min_epsilon = 0.05
-    anneal_steps = 500000
+    anneal_steps = 50000
     args.anneal_epsilon = (args.epsilon - args.min_epsilon) / anneal_steps
     args.epsilon_anneal_scale = 'step'
 
@@ -78,8 +74,8 @@ def qmix_args(args):
     args.evaluate_cycle = 10
 
     # experience replay
-    args.batch_size = 32
-    args.buffer_size = int(5e3)
+    args.batch_size = BATCH_SIZE
+    args.buffer_size = REPLAY_MEM
 
     # how often to save the model
     args.save_cycle = 5000
@@ -112,7 +108,7 @@ def get_common_args():
     parser.add_argument('--alg', type=str, default='qmix', help='the algorithm to train the agent')
     parser.add_argument('--last_action', type=bool, default=False, help='whether to use the last action to choose action')
     parser.add_argument('--reuse_network', type=bool, default=False, help='whether to use one network for all agents')
-    parser.add_argument('--gamma', type=float, default=0.99, help='discount factor')
+    parser.add_argument('--gamma', type=float, default=GAMMA, help='discount factor')
     parser.add_argument('--optimizer', type=str, default="RMS", help='optimizer')
     parser.add_argument('--n_evaluate_episode', type=int, default=5, help='number of the episode to evaluate the agent')
     parser.add_argument('--model_dir', type=str, default='./model', help='model directory of the policy')

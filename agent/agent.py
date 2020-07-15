@@ -72,8 +72,26 @@ class Agents:
     #         param.grad.data.clamp_(-1, 1)
     #     optimizer.step()
 
-    def choose_action(self, obs, state, last_action, agent_num, epsilon, evaluate=False):
+    def choose_vanilla_action(self, obs, epsilon, evaluate=False):
+        if self.policy.name == 'dqn':
+            inputs = obs
+        else:
+            raise ValueError('이 함수는 dqn 이외에 지원하지 않습니다.`')
 
+        inputs = torch.tensor(inputs, dtype=torch.float32).unsqueeze(0)
+        if self.args.cuda:
+            inputs = inputs.cuda()
+
+        q_value = self.policy.eval_dqn_net(inputs)
+
+        if np.random.uniform() < epsilon and not evaluate:
+            action = np.random.choice(self.args.num_actions)
+        else:
+            action = torch.argmax(q_value).data.item()
+        return action
+
+
+    def choose_action(self, obs, state, last_action, agent_num, epsilon, evaluate=False):
         if self.policy.name == 'qmix':
             inputs = obs.copy()
             agent_id = np.zeros(self.num_agents)
@@ -92,12 +110,10 @@ class Agents:
         inputs = torch.tensor(inputs, dtype=torch.float32).unsqueeze(0)
         if self.args.cuda:
             inputs = inputs.cuda()
-
         if self.policy.name == 'qmix':
             q_value, self.policy.eval_hidden[:, agent_num, :] = self.policy.eval_rnn(inputs, hidden_state)
         elif self.policy.name =='dqn':
             q_value = self.policy.eval_dqn_net(inputs)
-
         if np.random.uniform() < epsilon and not evaluate:
             action = np.random.choice(self.args.num_actions)
         else:
