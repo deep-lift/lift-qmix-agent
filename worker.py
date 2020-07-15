@@ -112,9 +112,9 @@ class RolloutWorker:
 
             additional_reward = 0
             while not any(requested_agents) and not terminated:
-                additional_reward, terminated, requested_agents = self.env.step_split([0] * N_AGENTS)
+                rr, terminated, requested_agents = self.env.step_split([0] * N_AGENTS)
                 terminated = all(terminated)
-                additional_reward += np.sum(additional_reward)
+                additional_reward += np.sum(rr)
                 # print(f'step : {step}, reward : {additional_reward}, termniated : {terminated}, requested_agents: {requested_agents}')
             reward = np.sum(reward)  # todo : 개별 리워드의 합으로 global reward 계산
             reward += np.sum(additional_reward)

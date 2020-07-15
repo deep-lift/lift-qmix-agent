@@ -1,7 +1,7 @@
 /Models/
 *.csv
 *.png
-models/
+model/
 
 
 # Byte-compiled / optimized / DLL files
