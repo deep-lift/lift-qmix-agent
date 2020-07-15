@@ -52,9 +52,7 @@ class DQN:
         torch.save(self.eval_dqn_net.state_dict(), self.model_dir + '/' + num + '_dqn_params.pkl')
 
     def _get_inputs(self, batch, transition_idx):
-        # todo : rollback for qmix
-        # obs, state, obs_next, state_next, u_onehot = batch['o'][:, transition_idx], batch['s'][:, transition_idx], batch['o_next'][:, transition_idx], batch['s_next'][:, transition_idx], batch['u_onehot'][:]
-        obs, obs_next = batch['o'][:, transition_idx], batch['o_next'][:, transition_idx],
+        obs, state, obs_next, state_next, u_onehot = batch['o'][:, transition_idx], batch['s'][:, transition_idx], batch['o_next'][:, transition_idx], batch['s_next'][:, transition_idx], batch['u_onehot'][:]
 
         episode_num = obs.shape[0]
         inputs, inputs_next = [], []
@@ -63,35 +61,26 @@ class DQN:
         # todo : 아예 batch 만들때 필요없는 차원 생성 안하게 만들것
         obs = obs.squeeze()
         obs_next = obs_next.squeeze()
+        state = state.squeeze()
+        state_next = state_next.squeeze()
 
-        # todo : rollback for qmix
-        # inputs.append(
-        #     torch.tensor(
-        #         np.concatenate((obs, state), axis=-1), dtype=torch.float32, device=device
-        #     )
-        # )
         inputs.append(
-            torch.tensor(obs, dtype=torch.float32, device=device
+            torch.tensor(
+                np.concatenate((obs, state), axis=-1), dtype=torch.float32, device=device
             )
         )
 
-        # todo : rollback for qmix
-        # inputs_next.append(torch.tensor(
-        #     np.concatenate((obs_next, state_next), axis=-1),
-        #     dtype=torch.float32, device=device)
-        # )
         inputs_next.append(torch.tensor(
-            obs_next,
+            np.concatenate((obs_next, state_next), axis=-1),
             dtype=torch.float32, device=device)
         )
 
-        # todo : rollback for qmix
-        # if self.args.last_action:
-        #     if transition_idx == 0:  # 첫 경험이라면, 이전 행동을 0 벡터로하십시오
-        #         inputs.append(torch.zeros_like(u_onehot[:, transition_idx]))
-        #     else:
-        #         inputs.append(u_onehot[:, transition_idx - 1])
-        #     inputs_next.append(u_onehot[:, transition_idx])
+        if self.args.last_action:
+            if transition_idx == 0:  # 첫 경험이라면, 이전 행동을 0 벡터로하십시오
+                inputs.append(torch.zeros_like(u_onehot[:, transition_idx]))
+            else:
+                inputs.append(u_onehot[:, transition_idx - 1])
+            inputs_next.append(u_onehot[:, transition_idx])
 
         if self.args.reuse_network:
             # 현재 obs 3 차원 데이터에서 각 차원은 (에피소드 수, 에이전트 수, obs 차원)을 나타내므로 해당 벡터를 dim_1에 직접 추가하십시오.
@@ -120,11 +109,8 @@ class DQN:
             q_eval = self.eval_dqn_net(inputs)
             q_target = self.target_dqn_net(inputs_next)
 
-            # todo : rollback for qmix
-            # q_eval = q_eval.view(episode_num, self.num_agents, -1)
-            # q_target = q_target.view(episode_num, self.num_agents, -1)
-            q_eval = q_eval.view(episode_num, -1)
-            q_target = q_target.view(episode_num, -1)
+            q_eval = q_eval.view(episode_num, self.num_agents, -1)
+            q_target = q_target.view(episode_num, self.num_agents, -1)
 
             q_evals.append(q_eval)
             q_targets.append(q_target)
@@ -141,38 +127,31 @@ class DQN:
             else:
                 batch[key] = torch.tensor(batch[key], dtype=torch.float32)
 
-        # todo : rollback for qmix
-        # o, u, s, r, s_next, o_next, terminated = batch['o'], batch['u'], batch['s'], batch['r'], batch['s_next'], batch['o_next'],  batch['terminated']
-        o, u, r, o_next, terminated = batch['o'], batch['u'], batch['r'], batch['o_next'], batch['terminated']
+        o, u, s, r, s_next, o_next, terminated = batch['o'], batch['u'], batch['s'], batch['r'], batch['s_next'], batch['o_next'],  batch['terminated']
         mask = 1 - batch["padded"].float()
 
         q_evals, q_targets = self.get_q_values(batch, max_episode_len)
 
-        # todo : rollback for qmix
         if self.args.cuda:
-            # s = s.cuda()
+            s = s.cuda()
             o = o.cuda()
             u = u.cuda()
             r = r.cuda()
-            # s_next = s_next.cuda()
+            s_next = s_next.cuda()
             o_next = o_next.cuda()
             terminated = terminated.cuda()
             mask = mask.cuda()
-        # todo : rollback for qmix
-        # q_evals = torch.gather(q_evals, dim=3, index=u).squeeze(3)
-        # q_targets = q_targets.max(dim=3)[0]
-
-        q_evals = torch.gather(q_evals, dim=2, index=u).squeeze(2)
-        q_targets = q_targets.max(dim=2)[0]
+        q_evals = torch.gather(q_evals, dim=3, index=u).squeeze(3)
+        q_targets = q_targets.max(dim=3)[0]
 
         o = o.squeeze()
         o_next = o_next.squeeze()
+        s = s.squeeze()
+        s_next = s_next.squeeze()
 
-        # todo : rollback for qmix
-        # q_total_eval = self.eval_dqn_net(torch.cat((o, s),dim=-1))
-        # q_total_target = self.target_dqn_net(torch.cat((o_next,s_next), dim=-1))
-        q_total_eval = self.eval_dqn_net(o)
-        q_total_target = self.target_dqn_net(o_next)
+
+        q_total_eval = self.eval_dqn_net(torch.cat((o, s),dim=-1))
+        q_total_target = self.target_dqn_net(torch.cat((o_next,s_next), dim=-1))
 
         # todo : check this torch.repeat_interleave
         # q_total_eval = self.eval_dqn_net(torch.cat((o, torch.repeat_interleave(s, repeats=2, dim=1).unsqueeze(1)),dim=-1))
@@ -183,19 +162,14 @@ class DQN:
         td_error = (q_total_eval - targets.detach())
         masked_td_error = mask * td_error
 
-        # todo : rollback for qmix
         # 쓸모없는 경험 많기 때문에 평균 직접 사용못하며 실제 평균은 실제 경험 수로 나눔.
-        # loss = (masked_td_error ** 2).sum() / mask.sum()
-
-        loss = masked_td_error.pow(2).mean()
+        loss = (masked_td_error ** 2).sum() / mask.sum()
+        # loss = masked_td_error.pow(2).mean()
         self.optimizer.zero_grad()
         loss.backward()
         # torch.nn.utils.clip_grad_norm_(self.eval_parameters, self.args.grad_norm_clip)
         self.optimizer.step()
 
-        # todo : 여기 if 문 이상함!!
         if train_step > 0 and train_step % self.args.target_update_cycle == 0:
             self.target_dqn_net.load_state_dict(self.eval_dqn_net.state_dict())
-            # print('target network updated..')
-
-
+            print('target network updated..')

@@ -67,6 +67,8 @@ class RolloutWorker:
 
         plot_cnt_per_actions = np.asarray([0] * N_ACTION)
 
+        o.append(obs)
+
         while not d:
             action = self.agents.choose_vanilla_action(obs, epsilon, evaluate)
             plot_cnt_per_actions[action] += 1  # 여기에 액션의 출력과 요청 에이전트 수를 기록하기 위함
@@ -84,7 +86,6 @@ class RolloutWorker:
             if self.args.epsilon_anneal_scale == 'step':
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
 
-        o.append(obs)
         o_next = o[1:]
         o = o[:-1]
 
@@ -119,6 +120,12 @@ class RolloutWorker:
     def generate_episode(self, ep_num=None, evaluate=False):
         o, u, u_onehot, r, s, terminate, padded = [], [], [], [], [], [], []
         self.env.reset()
+
+        obs = self.env.get_obs()
+        state = self.env.get_state()
+        o.append(obs)
+        s.append(state)
+
         if RENDER:
             self.env.render()
 
@@ -151,14 +158,14 @@ class RolloutWorker:
 
             obs = self.env.get_obs()
             state = self.env.get_state()
-
             actions, actions_onehot = [], []
 
             for agent_id in range(self.num_agents):
-                # todo : last action을 onehot으로 넣고 있는데 사용 여부 확인해서 필요없음 제거
-                action = self.agents.choose_action(obs[agent_id], state, last_action[agent_id], agent_id, epsilon, evaluate)
 
                 if requested_agents[agent_id]:
+                    # todo : last action을 onehot으로 넣고 있는데 사용 여부 확인해서 필요없음 제거
+                    action = self.agents.choose_action(obs[agent_id], state, last_action[agent_id], agent_id, epsilon,
+                                                       evaluate)
                     action_onehot = np.zeros(self.args.num_actions)
                     action_onehot[action] = 1
                     actions.append(action)
@@ -198,8 +205,6 @@ class RolloutWorker:
             if self.args.epsilon_anneal_scale == 'step':
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
 
-        o.append(obs)
-        s.append(state)
         o_next = o[1:]
         s_next = s[1:]
         o = o[:-1]

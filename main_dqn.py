@@ -1,7 +1,7 @@
 from env_args import *
 from argslist import *
 from agent.agent import Agents
-from agent.dqn import DQN
+from agent.dqn_event_driven import DQN
 from worker import RolloutWorker
 import elevator
 from util.replay_buffer import ReplayBuffer

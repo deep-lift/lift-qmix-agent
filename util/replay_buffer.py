@@ -1,5 +1,6 @@
 import numpy as np
 import threading
+from argslist import *
 
 
 class ReplayBuffer:
@@ -13,7 +14,7 @@ class ReplayBuffer:
         self.current_idx = 0
         self.current_size = 0
 
-        if self.num_agents == 1:
+        if self.num_agents == 1 and not IS_EVENT_DRIVEN:
             self.buffers = {'o': np.empty([self.size, self.args.max_episode_steps, self.obs_space]),
                             'u': np.empty([self.size, self.args.max_episode_steps, 1]),
                             'r': np.empty([self.size, self.args.max_episode_steps, 1]),
