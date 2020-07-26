@@ -172,4 +172,4 @@ class DQN:
 
         if train_step > 0 and train_step % self.args.target_update_cycle == 0:
             self.target_dqn_net.load_state_dict(self.eval_dqn_net.state_dict())
-            print('target network updated..')
+            # print('target network updated..')

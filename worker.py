@@ -148,8 +148,10 @@ class RolloutWorker:
         plot_ep_requested_agents = np.asarray([0] * N_AGENTS)
         plot_ep_cnt_requested_agent = np.asarray([0] * N_AGENTS)
         plot_cnt_per_actions = np.asarray([0] * N_ACTION)
+        previous_actions = np.asarray([0] * N_ACTION)
 
         while not terminated:
+
             plot_ep_requested_agents[requested_agents] += 1  # 에이전트 액션별 카운트 (네트워크에서 출력한 에이전트의 액션 빈도)
             count_of_requested_agents = 0  # 요청 에이전트 수 기록
             for b in requested_agents:
@@ -166,6 +168,8 @@ class RolloutWorker:
                     # todo : last action을 onehot으로 넣고 있는데 사용 여부 확인해서 필요없음 제거
                     action = self.agents.choose_action(obs[agent_id], state, last_action[agent_id], agent_id, epsilon,
                                                        evaluate)
+                    # 이전 액션 업데이트
+                    previous_actions[agent_id] = action
                     action_onehot = np.zeros(self.args.num_actions)
                     action_onehot[action] = 1
                     actions.append(action)
@@ -173,8 +177,9 @@ class RolloutWorker:
                     last_action[agent_id] = action_onehot
                     plot_cnt_per_actions[action] += 1  # 여기에 액션의 출력과 요청 에이전트 수를 기록하기 위함
                 else:
+                    action = previous_actions[agent_id]
                     action_onehot = np.zeros(self.args.num_actions)
-                    action_onehot[action] = 0
+                    action_onehot[action] = 1
                     actions.append(action)
                     actions_onehot.append(action_onehot)
                     last_action[agent_id] = action_onehot
@@ -183,14 +188,15 @@ class RolloutWorker:
             terminated = all(terminated)
 
             # todo : 개별 리워드의 합으로 global reward 계산하나, 개별 리워드로 갈경우 에이전트별 합산하는 로직 재구성 필요
-            additional_reward = 0
-            while not any(requested_agents) and not terminated:
-                rr, terminated, requested_agents = self.env.step_split([0] * N_AGENTS)
-                terminated = all(terminated)
-                additional_reward += np.sum(rr)
-                # print(f'step : {step}, reward : {additional_reward}, termniated : {terminated}, requested_agents: {requested_agents}')
+            # additional_reward = 0
+            # while not any(requested_agents) and not terminated:
+            # while not terminated:
+            rr, terminated, requested_agents = self.env.step_split([0] * N_AGENTS)
+            terminated = all(terminated)
+            # additional_reward += np.sum(rr)
+            # print(f'step : {step}, reward : {additional_reward}, termniated : {terminated}, requested_agents: {requested_agents}')
             reward = np.sum(reward)  
-            reward += np.sum(additional_reward)
+            # reward += np.sum(additional_reward)
 
             o.append(obs)
             s.append(state)
