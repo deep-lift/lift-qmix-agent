@@ -13,18 +13,18 @@ def dqn_args(args):
     args.epsilon = 1
     args.min_epsilon = 0.1
 
-    anneal_steps = 50000
+    anneal_steps = 500000
     args.anneal_epsilon = (args.epsilon - args.min_epsilon) / anneal_steps
     args.epsilon_anneal_scale = 'step'
 
     # the number of the epoch to train the agent
-    args.n_epoch = 500000
+    args.n_epoch = 50000
 
     # the number of the episodes in one epoch
     args.n_episodes = 1
 
     # the number of the train steps in one epoch
-    args.train_steps = 1
+    args.train_steps = 5
 
     # how often to update the target_net
     args.target_update_cycle = 1

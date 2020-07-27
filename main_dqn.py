@@ -34,7 +34,7 @@ buffer = ReplayBuffer(args)
 plt.figure()
 plt.axis([0, args.n_epoch, 0, 100])
 win_rates = []
-episode_rewards = []
+# episode_rewards = []
 train_steps = 0
 
 save_path = args.result_dir + '/' + current
@@ -45,14 +45,14 @@ for epoch in range(args.n_epoch):
     episodes = []
     for e in range(args.n_episodes):
         n_episode = n_episode + 1
-        episode, episode_reward, episode_count_per_actions, episode_episode_requested_agents, episode_episode_count_requested_agent, current_epsilon = worker.generate_episode(e)
+        episode, episode_reward, episode_count_per_actions, episode_episode_requested_agents, episode_episode_count_requested_agent, current_epsilon, episode_rewards = worker.generate_episode(e)
         plot_count_per_actions += episode_count_per_actions
         plot_episode_requested_agents += episode_episode_requested_agents
         plot_episode_count_requested_agent += episode_episode_count_requested_agent
         plot_episode_rewards.append(episode_reward)
         plot_episode_epsilon.append(current_epsilon)
         episodes.append(episode)
-        print(f'{n_episode} episode reward: {episode_reward}, epsilon : {current_epsilon}')
+        print(f'{n_episode} episode reward: {episode_reward}, epsilon : {current_epsilon}, episode_len : {len(episode_rewards)}, rewards : {episode_rewards}')
 
     episode_batch = episodes[0]
     episodes.pop(0)

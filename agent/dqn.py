@@ -190,7 +190,7 @@ class DQN:
         loss = masked_td_error.pow(2).mean()
         self.optimizer.zero_grad()
         loss.backward()
-        # torch.nn.utils.clip_grad_norm_(self.eval_parameters, self.args.grad_norm_clip)
+        torch.nn.utils.clip_grad_norm_(self.eval_parameters, self.args.grad_norm_clip)
         self.optimizer.step()
 
         # todo : 여기 if 문 이상함!!

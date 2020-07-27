@@ -149,6 +149,7 @@ class RolloutWorker:
         plot_ep_cnt_requested_agent = np.asarray([0] * N_AGENTS)
         plot_cnt_per_actions = np.asarray([0] * N_ACTION)
         previous_actions = np.asarray([0] * N_ACTION)
+        rewards = []
 
         while not terminated:
 
@@ -191,8 +192,8 @@ class RolloutWorker:
             # additional_reward = 0
             # while not any(requested_agents) and not terminated:
             # while not terminated:
-            rr, terminated, requested_agents = self.env.step_split([0] * N_AGENTS)
-            terminated = all(terminated)
+            # rr, terminated, requested_agents = self.env.step_split([0] * N_AGENTS)
+            # terminated = all(terminated)
             # additional_reward += np.sum(rr)
             # print(f'step : {step}, reward : {additional_reward}, termniated : {terminated}, requested_agents: {requested_agents}')
             reward = np.sum(reward)  
@@ -207,6 +208,7 @@ class RolloutWorker:
             padded.append([0.])
             ep_reward += reward
             step += 1
+            rewards.append(reward)
 
             if self.args.epsilon_anneal_scale == 'step':
                 epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
@@ -243,4 +245,4 @@ class RolloutWorker:
         if not evaluate:
             self.epsilon = epsilon
 
-        return episode, ep_reward, plot_cnt_per_actions, plot_ep_requested_agents, plot_ep_cnt_requested_agent, epsilon
+        return episode, ep_reward, plot_cnt_per_actions, plot_ep_requested_agents, plot_ep_cnt_requested_agent, epsilon, rewards
